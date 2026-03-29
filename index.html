@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>識字小天地 — 普通話核心詞語學習</title>
+  <meta name="description" content="互動學習普通話核心詞語，適合小朋友使用" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📚</text></svg>" />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;600;700;900&display=swap" rel="stylesheet" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.9/babel.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body, #root { height: 100%; }
+    body { font-family: 'Noto Sans SC', 'PingFang SC', 'Microsoft YaHei', sans-serif; -webkit-font-smoothing: antialiased; }
+    button { font-family: inherit; }
+    @keyframes float { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
+    @keyframes popIn { 0% { transform: scale(0.5); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
+    @keyframes bounceIn { 0% { transform: scale(0.3); opacity: 0; } 50% { transform: scale(1.05); } 100% { transform: scale(1); opacity: 1; } }
+    @keyframes pulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.08); } }
+    @keyframes shake { 0%,100% { transform: translateX(0); } 25% { transform: translateX(-8px); } 75% { transform: translateX(8px); } }
+    @keyframes confettiFall { 0% { opacity:1; transform: translateY(0) scale(1) rotate(0deg); } 100% { opacity:0; transform: translateY(120px) scale(0.3) rotate(720deg); } }
+    button:active { transform: scale(0.96); }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+  <script type="text/babel">
+    const { useState, useEffect } = React;
+
+    const CATEGORIES = [
+      {
+        name: "人物", emoji: "👨‍👩‍👧‍👦", color: "#FF6B6B", bg: "#FFF0F0",
+        words: [
+          { char: "人", pinyin: "rén" }, { char: "你", pinyin: "nǐ" },
+          { char: "他", pinyin: "tā" }, { char: "她", pinyin: "tā" },
+          { char: "家", pinyin: "jiā" }, { char: "爸爸", pinyin: "bà ba" },
+          { char: "媽媽", pinyin: "mā ma" }, { char: "爺爺", pinyin: "yé ye" },
+          { char: "奶奶", pinyin: "nǎi nai" },
+        ],
+      },
+      {
+        name: "動物", emoji: "🐾", color: "#4ECDC4", bg: "#F0FFFE",
+        words: [
+          { char: "貓", pinyin: "māo" }, { char: "狗", pinyin: "gǒu" },
+          { char: "鳥", pinyin: "niǎo" }, { char: "雞", pinyin: "jī" },
+          { char: "魚", pinyin: "yú" }, { char: "鼠", pinyin: "shǔ" },
+          { char: "蟻", pinyin: "yǐ" }, { char: "龍", pinyin: "lóng" },
+          { char: "蟲", pinyin: "chóng" }, { char: "蝴蝶", pinyin: "hú dié" },
+        ],
+      },
+      {
+        name: "時間", emoji: "⏰", color: "#FFB347", bg: "#FFF8F0",
+        words: [
+          { char: "年", pinyin: "nián" }, { char: "月", pinyin: "yuè" },
+          { char: "早上", pinyin: "zǎo shang" }, { char: "中午", pinyin: "zhōng wǔ" },
+          { char: "下午", pinyin: "xià wǔ" }, { char: "晚上", pinyin: "wǎn shang" },
+          { char: "今天", pinyin: "jīn tiān" }, { char: "明天", pinyin: "míng tiān" },
+        ],
+      },
+      {
+        name: "地點", emoji: "📍", color: "#9B59B6", bg: "#F8F0FF",
+        words: [
+          { char: "公園", pinyin: "gōng yuán" }, { char: "家", pinyin: "jiā" },
+          { char: "學校", pinyin: "xué xiào" },
+        ],
+      },
+      {
+        name: "動作", emoji: "🏃", color: "#3498DB", bg: "#F0F6FF",
+        words: [
+          { char: "吃", pinyin: "chī" }, { char: "喜歡", pinyin: "xǐ huan" },
+          { char: "看", pinyin: "kàn" }, { char: "想", pinyin: "xiǎng" },
+          { char: "畫", pinyin: "huà" }, { char: "說話", pinyin: "shuō huà" },
+          { char: "告訴", pinyin: "gào su" }, { char: "跑步", pinyin: "pǎo bù" },
+          { char: "跳高", pinyin: "tiào gāo" }, { char: "踢球", pinyin: "tī qiú" },
+          { char: "吃飯", pinyin: "chī fàn" }, { char: "喝", pinyin: "hē" },
+          { char: "水", pinyin: "shuǐ" }, { char: "睡覺", pinyin: "shuì jiào" },
+          { char: "笑", pinyin: "xiào" },
+        ],
+      },
+      {
+        name: "食物", emoji: "🍱", color: "#E67E22", bg: "#FFF5EB",
+        words: [
+          { char: "米飯", pinyin: "mǐ fàn" }, { char: "冰淇淋", pinyin: "bīng qí lín" },
+          { char: "蘋果", pinyin: "píng guǒ" }, { char: "麵條", pinyin: "miàn tiáo" },
+          { char: "月餅", pinyin: "yuè bǐng" }, { char: "青菜", pinyin: "qīng cài" },
+        ],
+      },
+      {
+        name: "形容詞", emoji: "🌈", color: "#E84393", bg: "#FFF0F8",
+        words: [
+          { char: "開心", pinyin: "kāi xīn" }, { char: "高興", pinyin: "gāo xìng" },
+          { char: "生氣", pinyin: "shēng qì" }, { char: "寒冷", pinyin: "hán lěng" },
+          { char: "快", pinyin: "kuài" }, { char: "慢", pinyin: "màn" },
+          { char: "美麗", pinyin: "měi lì" }, { char: "可愛", pinyin: "kě ài" },
+        ],
+      },
+    ];
+
+    const WORD_EMOJIS = {
+      "人":"🧑","你":"👉","他":"👦","她":"👧","家":"🏠",
+      "爸爸":"👨","媽媽":"👩","爺爺":"👴","奶奶":"👵",
+      "貓":"🐱","狗":"🐕","鳥":"🐦","雞":"🐔","魚":"🐟",
+      "鼠":"🐭","蟻":"🐜","龍":"🐉","蟲":"🐛","蝴蝶":"🦋",
+      "年":"📅","月":"🌙","早上":"🌅","中午":"☀️","下午":"🌤️",
+      "晚上":"🌙","今天":"📆","明天":"➡️",
+      "公園":"🏞️","學校":"🏫",
+      "吃":"😋","喜歡":"❤️","看":"👀","想":"🤔","畫":"🎨",
+      "說話":"💬","告訴":"📢","跑步":"🏃","跳高":"🤸","踢球":"⚽",
+      "吃飯":"🍚","喝":"🥤","水":"💧","睡覺":"😴","笑":"😄",
+      "米飯":"🍚","冰淇淋":"🍦","蘋果":"🍎","麵條":"🍜",
+      "月餅":"🥮","青菜":"🥬",
+      "開心":"😊","高興":"😃","生氣":"😠","寒冷":"🥶",
+      "快":"⚡","慢":"🐢","美麗":"🌸","可愛":"🥰",
+    };
+
+    const CHEERS = ["太棒了！🎉", "好叻！👏", "答啱咗！✨", "勁呀！🌟"];
+
+    function speakWord(text) {
+      if ("speechSynthesis" in window) {
+        window.speechSynthesis.cancel();
+        const u = new SpeechSynthesisUtterance(text);
+        u.lang = "zh-CN";
+        u.rate = 0.7;
+        u.pitch = 1.1;
+        window.speechSynthesis.speak(u);
+      }
+    }
+
+    function ConfettiBurst({ onDone }) {
+      const [particles] = useState(() =>
+        Array.from({ length: 24 }, (_, i) => ({
+          id: i, x: Math.random() * 100, y: Math.random() * 40 + 10,
+          size: Math.random() * 8 + 4,
+          color: ["#FF6B6B","#4ECDC4","#FFB347","#9B59B6","#3498DB","#E84393","#2ECC71"][i % 7],
+          delay: Math.random() * 0.3, rotation: Math.random() * 360,
+          round: Math.random() > 0.5,
+        }))
+      );
+      useEffect(() => { const t = setTimeout(() => onDone && onDone(), 1200); return () => clearTimeout(t); }, []);
+      return (
+        <div style={{ position:"fixed", inset:0, pointerEvents:"none", zIndex:999 }}>
+          {particles.map(p => (
+            <div key={p.id} style={{
+              position:"absolute", left:`${p.x}%`, top:`${p.y}%`,
+              width:p.size, height:p.size, backgroundColor:p.color,
+              borderRadius: p.round ? "50%" : "2px",
+              transform:`rotate(${p.rotation}deg)`,
+              animation:`confettiFall 1s ease-out ${p.delay}s forwards`, opacity:0,
+            }} />
+          ))}
+        </div>
+      );
+    }
+
+    function App() {
+      const [mode, setMode] = useState("home");
+      const [selectedCat, setSelectedCat] = useState(null);
+      const [cardIndex, setCardIndex] = useState(0);
+      const [flipped, setFlipped] = useState(false);
+      const [quizWords, setQuizWords] = useState([]);
+      const [quizIndex, setQuizIndex] = useState(0);
+      const [quizOptions, setQuizOptions] = useState([]);
+      const [quizAnswer, setQuizAnswer] = useState(null);
+      const [score, setScore] = useState(0);
+      const [showConfetti, setShowConfetti] = useState(false);
+      const [streak, setStreak] = useState(0);
+      const [totalStars, setTotalStars] = useState(0);
+      const [cheerMsg, setCheerMsg] = useState("");
+
+      const allWords = CATEGORIES.flatMap(c => c.words);
+
+      function startLearn(cat) {
+        setSelectedCat(cat); setCardIndex(0); setFlipped(false); setMode("learn");
+      }
+
+      function generateOptions(words, idx, pool) {
+        const correct = words[idx];
+        const others = pool.filter(w => w.char !== correct.char);
+        const shuffled = others.sort(() => Math.random() - 0.5).slice(0, 3);
+        return [...shuffled, correct].sort(() => Math.random() - 0.5);
+      }
+
+      function startQuiz(cat) {
+        setSelectedCat(cat);
+        const words = [...cat.words].sort(() => Math.random() - 0.5).slice(0, Math.min(cat.words.length, 6));
+        setQuizWords(words);
+        setQuizIndex(0); setScore(0); setStreak(0); setQuizAnswer(null);
+        setQuizOptions(generateOptions(words, 0, allWords));
+        setMode("quiz");
+      }
+
+      function handleQuizAnswer(word) {
+        const correct = quizWords[quizIndex];
+        const isCorrect = word.char === correct.char;
+        setQuizAnswer({ word, isCorrect });
+        if (isCorrect) {
+          setScore(s => s + 1); setStreak(s => s + 1);
+          setShowConfetti(true); speakWord(correct.char);
+          setCheerMsg(CHEERS[Math.floor(Math.random() * CHEERS.length)]);
+        } else {
+          setStreak(0);
+        }
+        setTimeout(() => {
+          const nextIdx = quizIndex + 1;
+          if (nextIdx < quizWords.length) {
+            setQuizIndex(nextIdx); setQuizAnswer(null);
+            setQuizOptions(generateOptions(quizWords, nextIdx, allWords));
+          } else {
+            const finalScore = isCorrect ? score + 1 : score;
+            setTotalStars(t => t + finalScore);
+            setMode("results");
+          }
+        }, 1400);
+      }
+
+      const pageStyle = (bg) => ({
+        minHeight:"100vh", padding:"16px", maxWidth:480, margin:"0 auto", background:bg,
+      });
+
+      // ============ HOME ============
+      if (mode === "home") {
+        return (
+          <div style={pageStyle("linear-gradient(145deg, #FFF9E6 0%, #FFE8F0 50%, #E8F4FF 100%)")}>
+            <div style={{ textAlign:"center", padding:"24px 0 16px" }}>
+              <div style={{ fontSize:48, animation:"float 3s ease-in-out infinite" }}>📚</div>
+              <h1 style={{
+                fontSize:28, fontWeight:900,
+                background:"linear-gradient(135deg, #FF6B6B, #E84393, #9B59B6)",
+                WebkitBackgroundClip:"text", WebkitTextFillColor:"transparent",
+                margin:"8px 0 4px",
+              }}>識字小天地</h1>
+              <p style={{ fontSize:13, color:"#888", fontWeight:600 }}>普通話核心詞語學習 ✨</p>
+              {totalStars > 0 && (
+                <div style={{
+                  display:"inline-flex", alignItems:"center", gap:6,
+                  background:"#FFF3CD", borderRadius:20, padding:"4px 14px",
+                  marginTop:8, fontSize:14, fontWeight:700, color:"#B8860B",
+                }}>⭐ {totalStars} 顆星星</div>
+              )}
+            </div>
+            <div style={{ display:"flex", flexDirection:"column", gap:10, marginTop:8 }}>
+              {CATEGORIES.map((cat, i) => (
+                <div key={cat.name} style={{
+                  background:"white", borderRadius:16, padding:"14px 16px",
+                  boxShadow:`0 2px 12px ${cat.color}22`, border:`2px solid ${cat.color}33`,
+                  animation:`popIn 0.4s ease-out ${i * 0.06}s both`,
+                }}>
+                  <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between" }}>
+                    <div style={{ display:"flex", alignItems:"center", gap:10 }}>
+                      <div style={{
+                        width:44, height:44, borderRadius:12, background:cat.bg,
+                        display:"flex", alignItems:"center", justifyContent:"center", fontSize:22,
+                      }}>{cat.emoji}</div>
+                      <div>
+                        <div style={{ fontWeight:800, fontSize:16, color:"#333" }}>{cat.name}</div>
+                        <div style={{ fontSize:11, color:"#999", marginTop:1 }}>{cat.words.length} 個詞語</div>
+                      </div>
+                    </div>
+                    <div style={{ display:"flex", gap:6 }}>
+                      <button onClick={() => startLearn(cat)} style={{
+                        background:cat.color, color:"white", border:"none", borderRadius:10,
+                        padding:"8px 14px", fontSize:13, fontWeight:700, cursor:"pointer",
+                      }}>學</button>
+                      <button onClick={() => startQuiz(cat)} style={{
+                        background:"white", color:cat.color, border:`2px solid ${cat.color}`,
+                        borderRadius:10, padding:"8px 14px", fontSize:13, fontWeight:700, cursor:"pointer",
+                      }}>考</button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        );
+      }
+
+      // ============ LEARN ============
+      if (mode === "learn") {
+        const cat = selectedCat;
+        const word = cat.words[cardIndex];
+        const emoji = WORD_EMOJIS[word.char] || "📝";
+        return (
+          <div style={pageStyle(`linear-gradient(160deg, ${cat.bg} 0%, white 100%)`)}>
+            <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:16 }}>
+              <button onClick={() => setMode("home")} style={{
+                background:"white", border:"none", borderRadius:10, padding:"8px 14px",
+                fontSize:14, fontWeight:700, cursor:"pointer", color:"#666",
+                boxShadow:"0 2px 8px rgba(0,0,0,0.08)",
+              }}>← 返回</button>
+              <div style={{ background:"white", borderRadius:10, padding:"6px 14px", fontSize:13, fontWeight:700, color:cat.color }}>
+                {cat.emoji} {cat.name}
+              </div>
+              <div style={{ fontSize:13, fontWeight:700, color:"#999" }}>{cardIndex+1}/{cat.words.length}</div>
+            </div>
+            <div style={{ height:6, background:"#eee", borderRadius:3, marginBottom:24, overflow:"hidden" }}>
+              <div style={{ height:"100%", width:`${((cardIndex+1)/cat.words.length)*100}%`, background:cat.color, borderRadius:3, transition:"width 0.4s ease" }} />
+            </div>
+            <div onClick={() => { setFlipped(!flipped); speakWord(word.char); }} style={{
+              background:"white", borderRadius:24, padding:"32px 24px", textAlign:"center",
+              boxShadow:`0 8px 32px ${cat.color}22`, border:`3px solid ${cat.color}33`,
+              cursor:"pointer", minHeight:280, display:"flex", flexDirection:"column",
+              alignItems:"center", justifyContent:"center", animation:"bounceIn 0.5s ease-out",
+              position:"relative", marginBottom:20,
+            }}>
+              <div style={{ fontSize:56, marginBottom:12 }}>{emoji}</div>
+              <div style={{ fontSize:64, fontWeight:900, color:"#333", lineHeight:1.2, marginBottom:8 }}>{word.char}</div>
+              {flipped && (
+                <div style={{ animation:"bounceIn 0.3s ease-out" }}>
+                  <div style={{ fontSize:24, fontWeight:600, color:cat.color, marginBottom:8 }}>{word.pinyin}</div>
+                </div>
+              )}
+              <div style={{ position:"absolute", bottom:12, right:16, fontSize:11, color:"#ccc", fontWeight:600 }}>👆 撳一下翻開</div>
+            </div>
+            <button onClick={(e) => { e.stopPropagation(); speakWord(word.char); }} style={{
+              display:"flex", alignItems:"center", justifyContent:"center", gap:8,
+              width:"100%", padding:"14px", background:cat.color, color:"white",
+              border:"none", borderRadius:14, fontSize:16, fontWeight:700, cursor:"pointer", marginBottom:12,
+            }}>🔊 聽普通話發音</button>
+            <div style={{ display:"flex", gap:10 }}>
+              <button disabled={cardIndex===0} onClick={() => { setCardIndex(i => i-1); setFlipped(false); }} style={{
+                flex:1, padding:"12px", background:cardIndex===0?"#eee":"white",
+                border:`2px solid ${cardIndex===0?"#ddd":cat.color}`, borderRadius:12,
+                fontSize:15, fontWeight:700, color:cardIndex===0?"#ccc":cat.color,
+                cursor:cardIndex===0?"default":"pointer",
+              }}>← 上一個</button>
+              <button disabled={cardIndex===cat.words.length-1} onClick={() => { setCardIndex(i => i+1); setFlipped(false); }} style={{
+                flex:1, padding:"12px",
+                background:cardIndex===cat.words.length-1?"#eee":cat.color,
+                border:"none", borderRadius:12, fontSize:15, fontWeight:700,
+                color:cardIndex===cat.words.length-1?"#ccc":"white",
+                cursor:cardIndex===cat.words.length-1?"default":"pointer",
+              }}>下一個 →</button>
+            </div>
+            {cardIndex === cat.words.length - 1 && (
+              <button onClick={() => startQuiz(cat)} style={{
+                width:"100%", marginTop:12, padding:"14px",
+                background:"linear-gradient(135deg, #FFB347, #FF6B6B)",
+                color:"white", border:"none", borderRadius:14,
+                fontSize:16, fontWeight:800, cursor:"pointer",
+                animation:"pulse 1.5s ease-in-out infinite",
+              }}>🎯 開始測驗！</button>
+            )}
+          </div>
+        );
+      }
+
+      // ============ QUIZ ============
+      if (mode === "quiz") {
+        const cat = selectedCat;
+        const word = quizWords[quizIndex];
+        const emoji = WORD_EMOJIS[word?.char] || "📝";
+        return (
+          <div style={pageStyle(`linear-gradient(160deg, #FFF9E6 0%, ${cat.bg} 100%)`)}>
+            {showConfetti && <ConfettiBurst onDone={() => setShowConfetti(false)} />}
+            <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:16 }}>
+              <button onClick={() => setMode("home")} style={{
+                background:"white", border:"none", borderRadius:10, padding:"8px 14px",
+                fontSize:14, fontWeight:700, cursor:"pointer", color:"#666",
+              }}>← 返回</button>
+              <div style={{ display:"flex", gap:8 }}>
+                {streak >= 2 && (
+                  <div style={{ background:"#FF6B6B", color:"white", borderRadius:10, padding:"6px 12px", fontSize:12, fontWeight:800 }}>
+                    🔥 {streak} 連中
+                  </div>
+                )}
+                <div style={{ background:"white", borderRadius:10, padding:"6px 12px", fontSize:13, fontWeight:700, color:"#B8860B" }}>
+                  ⭐ {score}/{quizWords.length}
+                </div>
+              </div>
+            </div>
+            <div style={{ height:6, background:"#eee", borderRadius:3, marginBottom:20, overflow:"hidden" }}>
+              <div style={{ height:"100%", width:`${((quizIndex+1)/quizWords.length)*100}%`, background:"linear-gradient(90deg, #4ECDC4, #3498DB)", borderRadius:3, transition:"width 0.4s ease" }} />
+            </div>
+            <div style={{ textAlign:"center", marginBottom:24 }}>
+              <div style={{ fontSize:14, color:"#999", fontWeight:600, marginBottom:8 }}>呢個字嘅普通話點讀？</div>
+              <div style={{ background:"white", borderRadius:20, padding:"24px", display:"inline-block", boxShadow:"0 4px 20px rgba(0,0,0,0.08)" }}>
+                <div style={{ fontSize:40, marginBottom:8 }}>{emoji}</div>
+                <div style={{ fontSize:56, fontWeight:900, color:"#333" }}>{word?.char}</div>
+              </div>
+            </div>
+            <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10 }}>
+              {quizOptions.map((opt, i) => {
+                const isSelected = quizAnswer?.word.char === opt.char;
+                const isCorrect = opt.char === word?.char;
+                let bg = "white", border = "#e0e0e0", textColor = "#333";
+                if (quizAnswer) {
+                  if (isCorrect) { bg="#D4EDDA"; border="#28A745"; textColor="#155724"; }
+                  else if (isSelected && !quizAnswer.isCorrect) { bg="#F8D7DA"; border="#DC3545"; textColor="#721C24"; }
+                }
+                return (
+                  <button key={opt.char+i} disabled={quizAnswer!==null} onClick={() => handleQuizAnswer(opt)} style={{
+                    background:bg, border:`2.5px solid ${border}`, borderRadius:16,
+                    padding:"16px 12px", cursor:quizAnswer?"default":"pointer",
+                    animation: quizAnswer && isSelected && !quizAnswer.isCorrect
+                      ? "shake 0.4s ease-in-out" : `popIn 0.3s ease-out ${i*0.05}s both`,
+                    textAlign:"center", transition:"all 0.2s",
+                  }}>
+                    <div style={{ fontSize:22, fontWeight:800, color:textColor }}>{opt.pinyin}</div>
+                    <div style={{ fontSize:14, color:"#999", marginTop:4, fontWeight:600 }}>{opt.char}</div>
+                  </button>
+                );
+              })}
+            </div>
+            {quizAnswer && quizAnswer.isCorrect && (
+              <div style={{ textAlign:"center", marginTop:16, animation:"popIn 0.3s ease-out" }}>
+                <div style={{ fontSize:18, fontWeight:800, color:"#28A745" }}>{cheerMsg}</div>
+              </div>
+            )}
+            {quizAnswer && !quizAnswer.isCorrect && (
+              <div style={{ textAlign:"center", marginTop:16, animation:"popIn 0.3s ease-out" }}>
+                <div style={{ fontSize:16, fontWeight:700, color:"#DC3545" }}>正確答案係：{word?.pinyin}</div>
+                <button onClick={() => speakWord(word?.char)} style={{
+                  marginTop:8, background:"#DC3545", color:"white", border:"none",
+                  borderRadius:10, padding:"8px 16px", fontSize:14, fontWeight:700, cursor:"pointer",
+                }}>🔊 聽正確發音</button>
+              </div>
+            )}
+          </div>
+        );
+      }
+
+      // ============ RESULTS ============
+      if (mode === "results") {
+        const cat = selectedCat;
+        const pct = Math.round((score / quizWords.length) * 100);
+        const msg = pct === 100 ? "滿分！你好叻！🏆" : pct >= 70 ? "做得好！繼續努力！💪" : "加油！再試多次！📖";
+        return (
+          <div style={{ ...pageStyle("linear-gradient(160deg, #FFF9E6 0%, #FFE8F0 50%, #E8F4FF 100%)"), textAlign:"center" }}>
+            <div style={{ padding:"40px 0 20px" }}>
+              <div style={{ fontSize:80, animation:"bounceIn 0.6s ease-out, float 3s ease-in-out 0.6s infinite" }}>
+                {pct===100?"🏆":pct>=70?"🌟":"📖"}
+              </div>
+              <h2 style={{ fontSize:28, fontWeight:900, color:"#333", marginTop:16, animation:"bounceIn 0.6s ease-out 0.2s both" }}>{msg}</h2>
+            </div>
+            <div style={{
+              background:"white", borderRadius:20, padding:"24px",
+              boxShadow:"0 4px 20px rgba(0,0,0,0.08)", marginBottom:20,
+              animation:"bounceIn 0.6s ease-out 0.3s both",
+            }}>
+              <div style={{ fontSize:48, fontWeight:900, color:cat.color }}>{score}/{quizWords.length}</div>
+              <div style={{ fontSize:14, color:"#999", fontWeight:600, marginTop:4 }}>
+                答對 {score} 題 · 獲得 ⭐{score} 顆星星
+              </div>
+              <div style={{ display:"flex", justifyContent:"center", gap:4, marginTop:12 }}>
+                {quizWords.map((_, i) => (
+                  <div key={i} style={{
+                    width:24, height:24, borderRadius:"50%",
+                    background: i < score ? "#FFD700" : "#eee",
+                    display:"flex", alignItems:"center", justifyContent:"center", fontSize:12,
+                  }}>{i < score ? "⭐" : "○"}</div>
+                ))}
+              </div>
+            </div>
+            <div style={{ display:"flex", gap:10 }}>
+              <button onClick={() => startQuiz(cat)} style={{
+                flex:1, padding:"14px", background:cat.color, color:"white",
+                border:"none", borderRadius:14, fontSize:15, fontWeight:800, cursor:"pointer",
+              }}>🔄 再試一次</button>
+              <button onClick={() => setMode("home")} style={{
+                flex:1, padding:"14px", background:"white", color:"#666",
+                border:"2px solid #ddd", borderRadius:14, fontSize:15, fontWeight:700, cursor:"pointer",
+              }}>🏠 返回主頁</button>
+            </div>
+          </div>
+        );
+      }
+
+      return null;
+    }
+
+    ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+  </script>
+</body>
+</html>
